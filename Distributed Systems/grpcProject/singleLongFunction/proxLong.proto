@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package grpcProject.protos;
+
+service ProxLong {
+  rpc ProxLong(EntryLong) returns (NextLong) {}
+}
+
+message EntryLong {
+  int64 entry = 1;
+}
+
+message NextLong {
+  int64 next = 1;
+}

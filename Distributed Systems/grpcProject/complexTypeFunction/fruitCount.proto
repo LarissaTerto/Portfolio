@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package grpcProject.protos;
+
+service FruitCount {
+  rpc FruitCount(Fruit) returns (FruitBasket) {}
+}
+
+message Object{
+  string name = 1;
+  string color = 2;
+  int32 quantity = 3;
+}
+
+message Obj{
+  repeated Object fruits = 1;
+  int32 size = 2;
+}
+
+message Fruit{
+  Object fruit = 1;
+}
+
+message FruitBasket{
+  Obj basket = 1;
+}

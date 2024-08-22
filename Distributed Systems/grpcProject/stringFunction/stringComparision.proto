@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package grpcProject.protos;
+
+service StringComparision {
+  rpc StringComparision(EntryString) returns (ResponseString) {}
+}
+
+message EntryString {
+  string string = 1;
+}
+
+message ResponseString {
+  string string = 1;
+}

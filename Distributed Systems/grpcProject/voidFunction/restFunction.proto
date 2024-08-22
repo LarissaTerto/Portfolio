@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package grpcProject.protos;
+
+import "google/protobuf/empty.proto";
+
+service RestFunction {
+  rpc GetAndReturnNothing(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package grpcProject.protos;
+
+service MultiSoma {
+  rpc MultiSoma(EntryLongs) returns (Sum) {}
+}
+
+message EntryLongs {
+  int64 entry1 = 1;
+  int64 entry2 = 2;
+  int64 entry3 = 3;
+  int64 entry4 = 4;
+  int64 entry5 = 5;
+  int64 entry6 = 6;
+  int64 entry7 = 7;
+  int64 entry8 = 8;
+}
+
+message Sum {
+  int64 soma = 1;
+}
