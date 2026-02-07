@@ -1,0 +1,1083 @@
+title: "CursoR - Introdução à análise de dados no R"
+author: 'Autor: Wasim Aluísio Prates Syed (@wasimvacinas)'
+
+# Baixar pacotes do CRAN para a biblioteca 
+install.packages("tidyverse")
+install.packages("skimr")
+install.packages("janitor")
+install.packages("esquisse")
+install.packages("ggthemes")
+install.packages("plotly")
+install.packages("gghighlight")
+install.packages("patchwork")
+install.packages("ggsci")
+install.packages("gapminder")
+install.packages("here")
+install.packages("gganimate")
+install.packages("scales")
+install.packages("GGally")
+install.packages("ggpmisc")
+
+library(tidyverse) #Metapacote 
+library(skimr) #Diagnóstico de tabela
+library(janitor) #Limpeza de tabelas
+library(esquisse) #Plotagem de gráficos prática
+library(ggthemes) #Temas de ggplot
+library(plotly) #Gráficos interativos
+library(patchwork) #Unir gráficos
+library(gghighlight) #Marcar pontos e linhas 
+library(ggsci) #Paleta de cores 
+library(gapminder) #Dataset sobre população, PIB e expectativa de vida dos países
+library(ggpmisc) 
+library(scales)
+library(here)
+library(gganimate)
+library(GGally)
+
+## Dataframes e tibbles
+
+```{r paged.print=TRUE}
+#Dataframes e tibbles -----
+
+#Dataframe
+data = data.frame(
+  gene = c("Gene1", "Gene2", "Gene3", "Gene4"),
+  variavel1 = c(1.59, 1.60, 1.78, 1.73),
+  variavel2 = c(30, 25, 31, 32)
+)
+data
+```
+
+```{r}
+#Tibble
+tibble = tribble(
+  ~gene, ~variavel1, ~variavel2,
+  "Gene1", 1.59,   30,
+  "Gene2",   1.60,   25,
+  "Gene3", 1.65,  31,
+  "Gene4",   1.73,   32 
+  )
+
+tibble
+```
+
+
+```{r}
+# Vetores em dataframe
+as.data.frame(i) #dataframe com coluna numérica
+as.data.frame(j) #dataframe com coluna textual
+as.data.frame(h) #dataframe com coluna textual, mesmo com valores numéricos
+```
+
+```{r}
+#Visualizando o dataframe -----
+# Com print()
+print(data) #No documento ou console
+print(tibble)
+
+# Com nome do objeto
+data
+tibble 
+
+# Com glimpse(). #Descrição mais completa da tabela
+glimpse(data) 
+glimpse(tibble)
+
+# Com view() ou View(). A tabela completa com mais funcionalidades (filtragem manual, pesquisa e ordenamento) abrirá em uma nova janela
+view(data) 
+view(tibble)
+
+# Selecione o nome do objeto, segure Ctrl e clique com o botão direito do mouse.
+data
+tibble 
+```
+
+## Estatísticas gerais da tabela
+
+```{r}
+# Estatísticas gerais 
+summary(tibble)
+summary(data)
+
+# Usando skim
+skim(tibble)
+skim(data)
+
+```
+
+## Pivotando tabelas: Long e Wide
+
+```{r}
+# Trabalhando com dataframes -----
+#Transformando outros formatos em dataframe
+
+# Long table
+data_long = pivot_longer(data, #Tabela 
+             cols = c(variavel1, variavel2), #Colunas para alongar 
+             values_to = "valor", # Estocar valores em uma nova coluna
+             names_to = "variavel" # Estocar variáveis em uma nova coluna
+             ) 
+data
+data_long
+```
+
+```{r}
+# Wide table
+data_wide = pivot_wider(data_long, #Tabela
+            names_from = variavel, #Dividir níveis de uma coluna em novas colunas
+            values_from = valor)   #Estocar valores relacionados à coluna nome 
+                                   #e novas variáveis) 
+data_wide
+```
+
+## Matrizes
+
+```{r}
+#Matriz
+matrix = as.matrix(data) #Transformar tabela em matriz
+matrix #Os valores numéricos são strings
+
+data_matrix = column_to_rownames(data, "gene") #Converte coluna em rownames
+matrix = as.matrix(data_matrix)
+matrix #Agora, os valores são numéricos
+
+```
+
+
+```{r}
+# Reconverter para dataframe
+matrix_dr = as.data.frame(matrix)
+
+matrix_dr # Coluna "nome" continua como rownames e dificulta a manipulação.
+
+matrix_dr = rownames_to_column(matrix_dr, "gene") #Converter rownames em nova coluna
+matrix_dr
+```
+
+## Listas
+
+```{r}
+#Criando a lista
+lista = list(a, b, h, j, multi, data, matrix, tibble)
+
+#View(lista) #Visualizando a lista
+
+#Acessando objetos diferentes da lista
+lista[[1]] #Primeiro objeto
+lista[[8]] #Oitavo objeto
+
+#Isolando o objeto
+df_list = lista[[8]]
+df_list
+
+```
+
+## Manipulação de tabelas com o R base
+
+```{r}
+# Acessando colunas do data frame
+data$gene
+data$variavel1
+
+```
+
+```{r}
+
+# Criando nova variável para não sobrescrever a tabela original para os próximos exemplos
+data_2 = data
+
+# Adicionando uma nova coluna ao data frame
+data_2$variavel3 = c(70,
+                     65,
+                     80,
+                     20)
+data_2
+
+```
+
+```{r}
+# Removendo uma coluna do data frame
+data_3 = data_2[ , -4]
+```
+
+```{r}
+# Filtrando linhas do data frame. df[linha, coluna]
+data_jovens = data_2[data_2$variavel3 < 30, ]
+data_jovens
+
+# Ordenando o data frame por uma coluna
+data_ordenados <- data_2[order(data_2$variavel3), ]
+data_ordenados
+```
+
+# 3. Tidyverse
+## `filter():` Filtrando linhas e usando o pipe
+
+```{r paged.print=TRUE}
+# Filtrando linhas ----
+variavel2 = filter(data, variavel2 <= 30)
+
+gene_variavel2 = filter(variavel2,
+                    gene == "Gene1")
+
+gene_variavel2
+```
+
+```{r paged.print=TRUE}
+#Usando OU (|)
+filter(data, gene == "Gene1" | 
+           gene == "Gene3")
+
+#Usando %in% c()
+filter(data, gene %in% c("Gene1", "Gene2")) 
+
+```
+
+```{r paged.print=TRUE}
+# Usando o pipe "%>%" (lê-se "e então")
+data %>%                   # Tenho este objeto 
+  filter(variavel2 >= 30) %>%  # E então vou filtrar os indivíduos com mais de 30 anos
+  filter(gene == "Gene1")   # E então vou filtrar os indivíduos chamados "Gabriela"
+```
+
+## `select():` Selecionando colunas
+
+```{r paged.print=TRUE}
+# Selecionando colunas ----
+# Selecionar colunas específicas
+data_2 %>%
+  select(gene, variavel1) 
+
+# Selecionar da coluna gene (1) à coluna variavel2 (3)
+data_2 %>% 
+  select(gene:variavel2) 
+
+#Retirando coluna
+data_2 %>% 
+  select(-variavel2) 
+
+data_2 %>%   
+  select(!variavel2)
+
+#Reordenando coluna
+data_2 %>%   
+  select(variavel2, everything())
+
+```
+
+```{r paged.print=TRUE}
+#Renomeando coluna com rename
+data_2 %>%   
+  rename(expression = variavel1) #Retirando coluna
+```
+
+## `mutate():` Criando e realizando operações com novas variáveis
+
+```{r paged.print=TRUE}
+# Criando novas variáveis
+data_2 = data_2 %>%
+  mutate(factor = variavel2 / (variavel1^2)) #Para cada linha da tabela, 
+                                  #pegaremos o valor da variavel2 e dividiremos 
+                                  #pela variavel1 ao quadrado.
+
+```
+
+```{r paged.print=TRUE}
+data_2 %>% 
+  mutate(species = "human") #Como todas as linhas contêm nomes 
+                            #femininos, criaremos a coluna species 
+                            #com o valor "human"
+```
+
+## `if_else` e `case_when()`: Condições
+
+```{r paged.print=TRUE}
+data_2 %>% 
+  mutate(classification = if_else(factor > 10, "super", "normal"))
+```
+
+```{r paged.print=TRUE}
+data_2 = data_2 %>% 
+  mutate(classification = case_when(factor >= 11 ~ "super",
+                                   factor > 10 & factor < 11 ~ "normal",
+                                   factor < 10 ~ "under"))
+```
+
+## summarize(): resumindo estatísticas
+
+```{r paged.print=TRUE}
+# Resumindo dados
+data_2 %>% 
+  summarize(mean = mean(variavel1))
+
+data_2 %>% 
+  summarize(sum = sum(variavel1))
+```
+
+## `group_by`: Agrupando dados
+
+```{r paged.print=TRUE}
+#Média dos grupos
+data_2 %>% 
+  group_by(classification) %>% 
+  summarize(mean = mean(variavel2))
+
+#Contagem
+data_2 %>% 
+  group_by(classification) %>% 
+  summarize(n = n())
+```
+
+## `arrange():` Ordenando dados
+
+```{r paged.print=TRUE}
+# Ordenando dados de forma crescente
+data_2 %>% 
+  arrange(variavel1)
+
+# Ordenando de forma decrescente
+#Método 1
+data_2 %>% 
+  arrange(desc(variavel1))
+
+#Método 2
+data_2 %>% 
+  arrange(-variavel1)
+```
+
+## Joins: merging/unindo tabelas
+
+```{r paged.print=TRUE}
+gene_info = tribble(~gene, ~type, ~process,
+          "Gene1", "Pseudogene", "Immune",
+          "Gene2", "Protein-coding", "Metabolism",
+          "Gene3", "miRNA", "Immune",
+          "Gene4", "Protein-coding", "Cellular",
+          "Gene5", "Protein-coding", "Regulation")
+gene_info
+```
+
+```{r paged.print=TRUE}
+data_2 %>% #Tabela original (tabela 1)
+  inner_join(gene_info, #Tabela para unir (tabela 2)
+             by = "gene") #Coluna correspondente
+```
+
+```{r paged.print=TRUE}
+data_2 %>% #Tabela original (tabela 1)
+  left_join(gene_info, #Tabela para unir (tabela 2)
+             by = "gene") #Coluna correspondente
+```
+
+### anti_join()
+
+Da mesma forma, podemos obter somente as linhas que estão na tabela 1, mas não na tabela 2. Isso é feito com a função `anti_join()`. O output dela é somente a linha da Rafaela com as colunas da tabela 1.
+
+```{r paged.print=TRUE}
+data_2 %>% #Tabela original (tabela 1)
+  anti_join(gene_info, #Tabela para unir (tabela 2)
+             by = "gene") #Coluna correspondente
+
+gene_info %>% #Tabela original (tabela 2)
+  anti_join(data_2, #Tabela para unir (tabela 1)
+             by = "gene") #Coluna correspondente
+```
+
+### right_join()
+
+Observe que a tabela `endereco` também tem uma linha que não está na tabela 1, a "Thais", e que ela não foi mostrada nas funções anteriores. Para incluir, podemos usar o right_join(), que assim como o left_join(), mostra todas as linhas de uma tabela, incluindo aquelas que não estão na outra. No caso, ela mostra todas as linhas da tabela 2, mesmo aquelas que não estão anotadas com os dados da tabela 1. Além disso, ela não mostra as linhas da tabela 1 que não estão na tabela, no caso "Rafaela".
+
+```{r paged.print=TRUE}
+data_2 %>% #Tabela original (tabela 1)
+  right_join(gene_info, #Tabela para unir (tabela 2)
+             by = "gene") #Coluna correspondente
+```
+
+### full_join()
+
+Agora, se quisermos ter uma tabela completa, com todas as linhas das tabelas 1 e 2, mesmo aquelas que não correspondem entre si, usamos a função `full_join()`.
+
+```{r paged.print=TRUE}
+data_2 %>% #Tabela original (tabela 1)
+  full_join(gene_info, #Tabela para unir (tabela 2)
+             by = "gene") #Coluna correspondente
+```
+
+## Usando o `pipe` para fazer múltiplas operações de uma vez
+
+Usando o pipe, podemos escrever e ler códigos em uma sequência lógica fácil.
+
+Por exemplo, abaixo:
+
+> 1.  *pegamos a tabela `data_2`, **ordenamos** a altura na ordem crescente,*
+> 2.  ***filtramos** somente as pessoas com idade acima de 30 e peso acima de 50 e **retiramos** os nomes.*
+> 3.  *Depois, **arredondamos** os valores do IMC para uma casa decimal (usando `round())` e **criamos uma nova variável** chamada `peso_x_idade`.*
+> 4.  *Por fim, **resumimos** os dados usando a média do peso e a média do imc, e criamos uma variável chamada `mega_pipe`*
+
+```{r}
+# Múltiplas operações em uma caixa
+mega_pipe = data_2 %>% 
+  arrange(variavel2) %>% 
+  filter(variavel2 >= 30,
+         variavel3 >= 50) %>% 
+  select(-gene) %>% 
+  mutate(factor = round(factor, 1),
+         var1_x_var2 = variavel1 * variavel2) %>%
+  summarise(mean = mean(variavel2),
+            mean = round(mean, 1),
+            mean_factor = mean(factor) %>% round(1))
+mega_pipe
+```
+
+# 4. Visualização
+
+A visualização com o `ggplot2` é feito em **camadas**. Primeiro, temos um dataframe com os dados de interesse, depois chamamos a função `ggplot()` e adicionamos um `+`, que funciona aqui como um pipe, mas somente para gráficos. A partir disso, temos de mapear os eixos, cores, tamanho, etc. com as variáveis de interesse, usando o `aes()`. Para definir qual tipo de gráfico iremos criar, temos de definir a geometria (`geom_`), que no caso é de pontos (`geom_point()`). Isso já produz um gráfico, mas não é um dos melhores.
+
+## Gráfico de barras
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  aes(x = gene,
+      y = factor) +
+  geom_col()
+```
+
+Para melhorar, podemos adicionar mais funções, como labels para os pontos do gráfico (`geom_label()`), um tema pré-definido (`theme_few()`) ou customizável (`theme()`), e **título** para o gráfico, **eixos**, e **legendas** (`labs())`. Além disso, para **reordenar** os valores de uma variável categórica, como os países, por uma variável numérica, usamos o `fct_reorder()` dentro do `mutate()`.
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  aes(x = fct_reorder(gene, -factor), #Mapeando variáveis
+      y = factor) +
+  geom_col() + #Geometria
+  theme_minimal() + #Tema 
+  labs(x = "Gene", #Títulos
+       y = "Factor",
+       title = "Factor")
+```
+
+Observe que a fonte dos eixos x e y estão muito pequenas e difíceis de visualizar. Conseguimos mudar facilmente esses atributos usando a função `theme()` e os argumentos `axis.text.x` e `axis.text.y`. Além disso, podemos melhorar o título do gráfico, deixando-o em negrito (`face = "bold"`) e centralizado ou justificado ao meio (`hjust`). Para isso, devemos usar a função `element_text(),` que aceita como parâmetros `size`, `color`, `face`, `angle`, etc. Não confunda com `theme_few()` ou qualquer outro tema pronto. Veja também que, quando adicionamos modificações no `theme()`, o `theme_few()` permanece como estava.
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  
+  #Mapeando variáveis
+  aes(x = fct_reorder(gene, -factor), 
+      y = factor) +
+  
+  #Geometria
+  geom_col() + 
+  
+  #Tema pré-estabelecido
+  theme_minimal() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold")) +
+  #Títulos
+  labs(x = "Gene", 
+       y = "Factor",
+       title = "Factor by gene")
+```
+
+## Cores
+
+Agora, vamos adicionar cores ao gráfico. Como vamos preencher os retângulos de acordo com os valores de uma variável (`classificacao`), atribuimos o nome da variável ao argumento `fill` em aesthetics (`aes()`). Adicionalmente, vamos renomear o título da legenda para o `fill` usando a função `labs()` e deixar os níveis começando com a letra maíuscula usando a função `scale_fill_discrete()`.
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  
+  #Mapeando variáveis
+  aes(x = fct_reorder(gene, -factor), 
+      y = factor,
+      fill = classification) +
+  
+  #Geometria
+  geom_col() + 
+  
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold")) +
+  #Títulos
+  labs(x = "Gene", 
+       y = "Factor",
+       title = "Factor") +
+  
+  #Renomeando levels
+  scale_fill_discrete(labels = c("under" = "Under", 
+                               "normal" = "Normal",
+                               "super" = "Super")) 
+```
+
+Por padrão, o ggplot2 utiliza uma paleta de cores nativa, mas podemos especificar a de nosso interesse. Existem diversos pacotes com paletas pré-definidas. Um dos pacotes é o `ggsci`, que apresenta as paletas dos principais journals acadêmicos, como a Nature, Science, e a The Lancet, além de filmes e séries de ficção, como jama, Tron e Futurama. Para acessar as paletas, use `vignette("ggsci"),` e para visualizar os códigos das cores, especifique a paleta usando `pal_` e depois `show_col()`. Aqui, usaremos a paleta dos **jama**. Definir as paletas é uma etapa importante para garantir a padronização dos gráficos no seu trabalho.
+
+```{r message=FALSE, warning=FALSE}
+# Cores
+#Mudando a paleta
+vignette("ggsci") 
+
+jama = pal_jama("default", #Especificar paleta
+              alpha = 0.7)(8) #Gerar 8 cores com transparencia = 70%
+jama %>% 
+  show_col()
+```
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  
+  #Mapeando variáveis
+  aes(x = fct_reorder(gene, -factor),
+      y = gene,
+      fill = classification) +
+  
+  #Adicionando geometrias
+  geom_col() +
+  
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Adicionando títulos
+  labs(x = "Gene", 
+       y = "Factor",
+       title = "Factor",
+       fill = "Classification") +
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold")) +
+  
+   #Renomeando levels
+  scale_fill_discrete(labels = c("under" = "Under", 
+                               "normal" = "Normal",
+                               "super" = "Super"))  +
+  scale_fill_jama()
+```
+
+E se quisermos definir uma paleta manualmente, podemos usar a função `scale_fill_manual()`, na qual atribuimos as cores específicas a cada categoria. Observe que podemos escrever o nome da cor ou o código, e o RStudio interpretará no próprio bloco de código. Para ver mais cores, acesse o site [coolors.co](https://coolors.co/). Lembre-se de sempre adicionar um `#` antes do código da cor.
+
+```{r}
+barras = data_2 %>% 
+  ggplot() +
+  aes(x = fct_reorder(gene, -factor),
+      y = factor,
+      fill = classification) +
+  geom_col() +
+  labs(x = "Nome", #Títulos
+       y = "IMC",
+       title = "Índice de massa corporal",
+       fill = "Classificação") +
+  
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold")) +
+  
+  #Renomeando levels
+  scale_fill_discrete(labels = c("under" = "Under", 
+                               "normal" = "Normal",
+                               "super" = "Super")) +
+  scale_fill_manual(values = c("under" = "red", 
+                               "normal" = "blue",
+                               "super" = "#ffb703"))
+
+barras
+```
+
+## Gráfico de dispersão
+
+Um gráfico com pontos que relaciona duas variáveis numéricas é interessante para visualizar uma associação. Vamos fazer exatamente o que fizemos com os gráficos de barras, mas agora definiremos a geometria com `geom_point()` e a cor será definida pelo argumento color. Ao definirmos as cores de pontos e linhas (unidimensionais), usamos `color`, e no caso de formas geométricas bidimensionais como barras e colunas, usamos `fill`. Além disso, podemos adicionar uma paleta de cores para cada nível da variável classificacao com `scale_color_*()`.
+
+```{r}
+
+data_2 %>% 
+  ggplot() +
+  aes(x = variavel3,
+      y = factor,
+      color = classification) +
+  geom_point() +
+  
+  #Títulos
+    labs(x = "Variável 3", 
+       y = "Factor",
+       title = "Factor versus Var 3",
+       color = "Factor") +
+  
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold"))  +
+  
+  #Cores
+  scale_color_jama()
+```
+
+Além disso, podemos criar um gradiente usando `scale_color_gradient()` e definindo as cores pros valores mínimo e máximo.
+
+```{r}
+data_2 %>% 
+  ggplot() +
+  aes(x = variable3,
+      y = factor,
+      color = factor) +
+  geom_point() +
+  
+  #Títulos
+    labs(x = "Variable 3", 
+       y = "Factor",
+       title = "Factor versus Variable",
+       color = "Factor") +
+  
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold"))  +
+  
+  #Gradiente de cores
+  scale_color_gradient(low = "yellow", 
+                       high = "brown", 
+                       na.value = NA)
+```
+
+## Adicionando mais geoms
+
+Por enquanto, somente visualizamos gráficos com uma geometria, mas podemos adicionar mais de uma. Agora, adicionaremos uma linha (`geom_line()`) para conectar os pontos. Além disso, vamos definir outros parâmetros para essas geometrias, como espessura (`size`) da linha e do ponto. Lembre-se que o ggplot2 é um sistema de camadas, então se adicionarmos a linha antes dos pontos no código, os pontos irão se sobrepor às linhas.
+
+```{r}
+linha = data_2 %>% 
+  ggplot() +
+  
+  #Mapping
+  aes(x = variavel3,
+      y = factor,
+      color = factor) +
+  
+  #Geometriasw
+  geom_line(size = 2) +
+  geom_point(size = 4) +
+  
+  #Títulos
+    labs(x = "Variable 3", 
+       y = "Factor",
+       title = "Factor versus Variable 3",
+       color = "Factor") +
+
+  #Tema pré-estabelecido
+  theme_light() + 
+  
+  #Modificando o tema
+  theme(axis.text.x = element_text(size = 10,
+                                   color = "black"),
+        axis.text.y = element_text(size = 10,
+                                   color = "black"),
+        plot.title = element_text(size = 12,
+                                  color = "black",
+                                  hjust = 0.5,
+                                  face = "bold"))  +
+  
+  #Gradiente de cores
+  scale_color_gradient(low = "yellow", 
+                       high = "brown", 
+                       na.value = NA)
+
+linha
+```
+
+## Salvando figuras
+
+Para salvar uma figura, vamos usar a função `ggsave()` e definir como tipo de arquivo `.png` e usar a função `here()`, que especifica o caminho do diretório ao qual salvaremos a figura. No caso, salvaremos dentro da pasta "Figuras".
+
+Há diferentes tipos de arquivos, como jpeg e tiff, mas usaremos o png por ser muito comum e também ser aceito por diferentes programas de edição, como o Google Slides, Powerpoint e Canva. Além disso, vamos definir também as dimensões da imagem final.
+
+```{r}
+linha %>% 
+  ggsave(file = here("Bioinformática","linha_factor.png"), width = 5, height = 5)
+```
+
+Uma outra forma de salvar a imagem é colar `linha` no console, printá-la (apertar `Enter`) e salvar diretamente da aba "Plots". Você poderá salvá-la como .png ou como pdf também!
+
+## Gráfico interativo: Plotly
+
+Em alguns casos, converter um gráfico estático em um interativo é muito interessante para explorar os dados, especialmente em gráficos com pontos mais complexos do que este. Para isso, usamos o pacote `plotly`.
+
+```{r message=FALSE, warning=FALSE}
+linha %>% 
+  ggplotly() 
+```
+
+## Visualização rápida com o Esquisse
+
+O pacote **`esquisse`** é uma ferramenta interativa para a construção de gráficos, de forma rápida e intuitiva.
+
+**Lembre-se de retirar os `#` antes de rodar.** Teste todos os parâmetros, como filtragem, cores, escalas, e veja como os dados se comportam nos diferentes tipos de gráficos. Observe também, no botão do lado inferior direito, que você pode gerar os códigos do gráfico e copiar para o bloco de código. Dessa forma, você automatiza seu gráfico sem precisar ficar abrindo esta janela sempre.
+
+```{r}
+# data_2 %>% 
+#   esquisser()
+```
+
+## Uma figura, mais gráficos
+
+Geramos diferentes gráficos acima. Entretanto, é interessante uni-los em uma só imagem. Afinal, são os mesmos dados explorados de formas diferentes. Para isso, temos o pacote patchwork, que funciona da forma mais simples possível usando operadores matemáticos, como `+`, `/` e `().`
+
+Para colocar um gráfico do lado do outro, use `+`.
+
+```{r}
+linha + barras + plot_layout(guides = "collect")
+```
+
+E para colocar um gráfico em cima do outro, use `/`.
+
+```{r}
+linha / barras + plot_layout(guides = "collect")
+```
+
+Para salvar, usaremos a mesma função `ggsave()`.
+
+```{r}
+linha_barra = linha / barras + plot_layout(guides = "collect")
+
+ggsave(linha_barra, file = here("Bioinformática","linha_barra.png"), width = 10, height = 5)
+```
+
+# Dia 2
+
+# 5. Trabalhando com dados de bioinformática
+
+Importando dados
+
+```{r}
+metadata <- read_csv("Bioinformática/metadata.csv")
+expression_data <- read_csv("Bioinformática/expression_data.csv")
+```
+
+Limpando dados
+
+```{r}
+library(janitor)
+metadata = metadata %>% 
+  clean_names()
+```
+
+Transformando dados
+
+Em matriz
+
+```{r}
+#Transformar em matriz
+expression_data_matriz = expression_data %>% 
+  column_to_rownames("gene") %>% 
+  as.matrix()
+```
+
+Em tabela longa
+
+```{r}
+#Transformar em tabela longa
+expression_data_long = expression_data %>%
+  pivot_longer(cols = -gene,
+               names_to = "sample",
+               values_to = "value")
+```
+
+Anotando dados
+
+```{r}
+#Unir duas tabelas com anotações
+expression_data_long_metadata = expression_data_long %>% 
+  inner_join(metadata, by = "sample")
+```
+
+Visualizando dados
+
+```{r eval=FALSE, include=FALSE}
+expression_data_long_metadata %>% 
+  filter(gene == "Gene_1") %>% 
+  esquisser()
+```
+
+Histograma
+
+```{r}
+library(ggsci)
+expression_data_long_metadata %>% 
+  filter(gene == "Gene_1") %>%
+  ggplot()+
+  aes(x = value, fill = condition) +
+  geom_point(aes(x = value, color = condition),
+             y = -0.1) +
+  geom_histogram(bins = 6L) +
+  scale_fill_npg() +
+  scale_color_npg() +
+  theme_classic()
+  
+```
+
+Gráfico de densidade
+
+```{r}
+expression_data_long_metadata %>% 
+  filter(gene == "Gene_1") %>%
+  ggplot()+
+  aes(x = value, fill = condition) +
+  geom_density(alpha = 0.8) +
+  theme_classic() +
+  scale_fill_npg()
+```
+
+Boxplot simples
+
+```{r}
+expression_data_long_metadata %>% 
+  filter(gene == "Gene_1") %>%
+  ggplot()+
+  aes(x = condition,
+      y = value, 
+      fill = condition) +
+  geom_boxplot() + 
+  theme_classic() +
+  scale_fill_npg()
+```
+
+Boxplot com violing plot e pontos
+
+```{r}
+p = expression_data_long_metadata %>% 
+  filter(gene == "Gene_1") %>%
+  ggplot()+
+  aes(x = condition, 
+      y = value, 
+      fill = condition) +
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(width = 0.4) +
+  geom_point() +
+  theme_classic() +
+  scale_fill_npg() +
+  labs(x = "Condition",
+       y = "Expression",
+       fill = "Condition",
+       title = "Gene 1",
+       subtitle = "Gene expression by condition")
+
+p
+
+```
+
+Gráfico de barras com intervalo de confiança 95%
+
+```{r}
+table_genes_1_2 = expression_data_long_metadata %>% 
+  group_by(condition, gene) %>% 
+  summarize(mean = mean(value),
+            sd = sd(value),
+            n = n(),
+            std_error = sd / sqrt(n),
+            lower_bound = mean - 1.96 * std_error,
+            upper_bound = mean + 1.96 * std_error)
+
+table_genes_1_2 %>% 
+  ungroup() %>% 
+  filter(gene == "Gene_1") %>%
+  ggplot()+
+  aes(x = condition, 
+      y = mean, 
+      fill = condition) +
+  geom_col() +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), 
+                width = 0.1) +
+  theme_classic() +
+  scale_fill_npg()+
+  labs(x = "Condition",
+       y = "Expression",
+       fill = "Condition",
+       title = "Gene 1",
+       subtitle = "Mean gene expression by condition")
+
+```
+
+Teste t com ggpubr
+
+```{r}
+library(ggpubr)
+my_comparisons <- list( c("Condition_A", "Condition_B"))
+p + 
+  stat_compare_means(comparisons = my_comparisons, 
+                     method = "t.test")
+```
+
+Gráfico de dispersão
+
+```{r}
+expression_data_long_metadata %>% 
+  filter(gene %in% c("Gene_1", "Gene_2")) %>%
+  pivot_wider(names_from = "gene",
+              values_from = "value") %>% 
+  ggplot()+
+  aes(x = Gene_1, 
+      y = Gene_2, 
+      color = condition) +
+  geom_point(size = 3) +
+  theme_classic() +
+  scale_color_npg() +
+  labs(x = "Gene 1",
+       y = "Gene 2",
+       color = "Condition",
+       title = "Gene 1 vs Gene 2",
+       subtitle = "Gene expression by condition") +
+  theme(legend.position = "top")
+```
+
+Heatmap
+
+```{r fig.height=10, fig.width=10}
+library(ggheatmap)
+library(circlize)
+library(ComplexHeatmap)
+library(scales)
+
+#Tabela com os nossos dados expressão
+heatmap_table = expression_data %>% 
+  column_to_rownames("gene") %>% 
+  as.matrix()
+
+#Tabela com anotações
+annotation_col = metadata %>% 
+  column_to_rownames("sample") %>% 
+  mutate(condition = as.factor(condition))
+annotation_col
+
+```
+
+```{r fig.height=10, fig.width=10}
+col = colorRamp2(c(0, 10, 20), c("white", "red", "black"))
+colors_annotations = list(condition = c("Condition_A" = "gray90",
+                                        "Condition_B" = "steelblue"))
+
+col_ha = HeatmapAnnotation(df = annotation_col, 
+                       col = colors_annotations, 
+                       annotation_name_side = "left")
+
+Heatmap(heatmap_table, 
+        top_annotation = col_ha,
+        cluster_rows = T, name = "Expression",
+        cluster_columns = T, 
+        cluster_row_slices = T,
+        cluster_column_slices = T,
+        col = col,
+        column_split = 2,
+        row_split = 3
+        ) 
+```
+
+# Hands-on: Transcriptoma da vacina ChAdOx-1-S
+
+Para esta prática, utilizaremos dados reais de vacinação com a vacina ChAdOx-1 da Astrazeneca.
+
+-   Importe as counts e metadados da vacina astrazeneca (GSE199750), na pasta "Bioinformática".
+-   Tente fazer as mesmas análises acima, agora adaptando o nome da variável etc.
+
+**Recomendações**
+
+1.  **Ao fazer a parte prática com suas análises, faça no mesmo documento**. A prática deve ser fácil e descomplicada.
+
+2.  **Lembre-se de criar blocos de códigos abaixo dos blocos de códigos de exemplos do tutorial.** Também, descreva os gráficos e códigos no espaço em branco, ou seja, fora do bloco de código. Isso garantirá que seu documento estará organizado e fácil de alterar.
+
+    **Por exemplo:**
+
+```{r}
+#Código exemplo
+#...
+```
+
+> "Meu código... Gráfico do tipo A dos genes X, Y, Z."
+
+```{r}
+#Seu código
+#...
+```
+
+**Alguns exemplos de perguntas que você pode se fazer:**
+
+-   **Quem**:
+
+    -   Quais são os **genes** **menos** expressos em cada **grupo**?
+
+    -   Quais são os **genes** **mais** expressos em cada **grupo**?
+
+-   **Comparações**:
+
+    -   Qual seria a média de expressão de um gene x para o grupo y e em comparação ao gene z? E a mediana? Calcule também o desvio padrão. (Dica: use `group_by()` e `summarize()`)
+
+**Alguns conselhos:**
+
+-   **Explore e leia os códigos do tutorial atentamente**. Tente entender o que cada linha de código faz.
+
+-   Pense **quais variáveis** você quer analisar:
+
+    -   É uma variável **numérica** ou **categórica**?
+
+    -   O gráfico que você quer analisar combina **duas variáveis numéricas** ou **uma variável categórica** e outra **numérica**?
+
+    -   **Para entender melhor os tipos de gráficos que você pode utilizar**, entre no [Data to viz](https://www.data-to-viz.com/). Ele te guiará como seguir a partir das variáveis que você está trabalhando.
+
+    -   Caso queira gerar outros tipos de gráficos, use diferentes geometrias e consulte o (R graph gallery)[<https://r-graph-gallery.com/>].
+
+-   Use o **esquisse** sempre para facilitar as análises iniciais. Os códigos podem ser complicados à primeira vista, mas o esquisse está aí para auxiliar nesse primeiro contato.
+
+-   **Use o ChatGPT.** O ChatGPT é uma ferramenta extremamente útil para a sua evolução na programação e você precisa aprender a usá-lo e a fazer perguntas corretas. 80% das vezes ele dá respostas perfeitas. Você pode usá-lo para explicar, consertar e criar códigos!
+
+    -   Copie e cole um bloco de código e peça para ele **explicar** cada linha e função.
+
+    -   Deu algum **erro** no código? Manda pra ele também o código e o erro que aparece no console.
+
+    -   Quer fazer algo **específico** e pontual no código? Manda pro ChatGPT!
+
+-   **Envie suas dúvidas no grupo de Whatsapp**. Caso seja necessário, marque uma monitoria gratuita comigo.
