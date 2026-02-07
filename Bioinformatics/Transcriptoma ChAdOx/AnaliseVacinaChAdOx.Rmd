@@ -1,0 +1,202 @@
+# Baixar pacotes do CRAN para a biblioteca
+
+```{r}
+install.packages("tidyverse")
+install.packages("skimr")
+install.packages("janitor")
+install.packages("esquisse")
+install.packages("ggthemes")
+install.packages("plotly")
+install.packages("gghighlight")
+install.packages("patchwork")
+install.packages("ggsci")
+install.packages("gapminder")
+install.packages("here")
+install.packages("gganimate")
+install.packages("scales")
+install.packages("GGally")
+install.packages("ggpmisc")
+
+library(tidyverse) #Metapacote 
+library(skimr) #Diagnóstico de tabela
+library(janitor) #Limpeza de tabelas
+library(esquisse) #Plotagem de gráficos prática
+library(ggthemes) #Temas de ggplot
+library(plotly) #Gráficos interativos
+library(patchwork) #Unir gráficos
+library(gghighlight) #Marcar pontos e linhas 
+library(ggsci) #Paleta de cores 
+library(gapminder) #Dataset sobre população, PIB e expectativa de vida dos países
+library(ggpmisc) 
+library(scales)
+library(here)
+library(gganimate)
+library(GGally)
+```
+
+#Importar tabelas
+```{r}
+data_astrazeneca <- read.csv("metadata_vaccine_astrazeneca.csv")
+summary(data_astrazeneca)
+glimpse(data_astrazeneca)
+view(data_astrazeneca)
+
+library(janitor)
+data_astrazeneca = data_astrazeneca %>% 
+  clean_names()
+
+data_astrazeneca
+
+```
+
+```{r}
+#Tabela de trancriptoma
+  #Lihas = genes
+  #Colunas = amostras
+  #Valores = contagens/intensidade de expressão (quantidade de RNA transcrito).
+
+genes_astrazeneca <- read.csv("counts_vaccine_astrazeneca.csv")
+summary(genes_astrazeneca)
+glimpse(genes_astrazeneca)
+view(genes_astrazeneca)
+
+library(janitor)
+genes_astrazeneca = genes_astrazeneca %>% 
+  clean_names()
+
+#genes_astrazeneca
+
+```
+
+#Qual a distribuição demográfica dos pacientes?
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Criar grupos de idade em intervalos de 10 anos
+data_astrazeneca %>%
+  mutate(age_group = cut(age, breaks = seq(20, 80, by = 10), right = FALSE)) %>%
+  count(age_group, sex) %>%
+  ggplot(aes(x = age_group, y = n, fill = sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Distribuição de Idade por Sexo",
+       x = "Faixa Etária (anos)",
+       y = "Número de Pacientes") +
+  theme_minimal()
+```
+
+#Unir tabelas
+```{r}
+# Transformar a matriz de expressão em formato longo
+library(tidyr)
+genes_long <- genes_astrazeneca %>%
+  pivot_longer(cols = -genes, names_to = "sample", values_to = "expression")
+
+# Juntar com metadados
+colnames(data_astrazeneca) <- tolower(colnames(data_astrazeneca))
+data_astrazeneca$sample <- tolower(data_astrazeneca$sample)
+
+genes_joined <- genes_long %>%
+  left_join(data_astrazeneca, by = c("sample" = "sample"))
+
+genes_joined
+```
+
+#Perguntas de Pesquisa
+  #Como interpretar os resultados
+  #estimate: diferença média de expressão entre os grupos 
+  #p.value: probabilidade de observar essa diferença por acaso. Quanto menor, mais          confiável é a diferença. Normalmente, adj_p < 0.05 indica diferença estatisticamente      significativa.
+
+#1.- Demografia vs expressão gênica: Homens e mulheres expressam certos genes de forma diferente?
+#Resp: Gene FRG da amostra obteve diferença significativa entre homens e mulheres (1390 a mais em homens)
+
+```{r}
+library(dplyr)
+library(broom)
+
+
+# Selecionar apenas os 10 primeiros genes
+subset_genes <- genes_joined %>%
+  filter(genes %in% head(unique(genes), 10))
+
+# Rodar teste t para cada gene
+results_subset <- subset_genes %>%
+  group_by(genes) %>%
+  do(tidy(t.test(expression ~ sex, data = .))) %>%
+  ungroup()
+
+#Ajustar p-valor
+results_subset <- results_subset %>%
+  mutate(adj_p = p.adjust(p.value, method = "fdr"))
+
+#Filtrar genes significativos
+sig_genes <- results_subset %>%
+  filter(adj_p < 0.05) %>%
+  arrange(adj_p)
+
+results_subset
+
+```
+
+```{r}
+#Visualziar resultado singificativo
+genes_joined %>%
+  filter(genes == "FGR") %>%
+  ggplot(aes(x = sex, y = expression, fill = sex)) +
+  geom_boxplot(alpha = 0.6) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  labs(title = "Expressão do gene FGR por sexo",
+       x = "Sexo", y = "Nível de expressão")
+```
+
+#2.Resposta temporal: Quais genes aumentam ou diminuem a expressão ao longo dos dias após a dose? 
+#Resp: Nenhum gene da amostra teve diferença significativa na expressão
+```{r}
+#Modelo de Regressão Linear para encontrar a expressão ao longo do tempo
+library(dplyr)
+library(broom)
+
+# Selecionar 10 genes aleatórios
+set.seed(123)  # para reprodutibilidade
+random_genes <- sample(unique(genes_joined$genes), 10)
+
+subset_genes <- genes_joined %>%
+  filter(genes %in% random_genes)
+
+# Rodar regressão linear para cada gene (expressão ~ week)
+results_subset <- subset_genes %>%
+  group_by(genes) %>%
+  do(tidy(lm(expression ~ day, data = .))) %>%
+  ungroup()
+
+# Filtrar apenas o coeficiente da variável "day"
+results_subset <- results_subset %>%
+  filter(term == "day") %>%
+  mutate(adj_p = p.adjust(p.value, method = "fdr")) %>%
+  arrange(adj_p)
+
+# Visualizar resultados
+results_subset
+```
+
+#3.Associação clínica-molecular: Correlação entre idade e expressão de genes específicos (ex.: genes inflamatórios).
+#Resp: Nenhum gene apresentou correlação significativa, mas o TNF chegou próximo, singificando que indivíduos idosos tendem a expressar mais o TNF após a vacinação
+```{r}
+library(dplyr)
+library(broom)
+
+# Selecionar genes inflamatórios
+genes_inflam <- c("IL6", "TNF", "CXCL8", "IFNG", "NFKBIA")
+
+subset_genes <- genes_joined %>%
+  filter(genes %in% genes_inflam)
+
+# Rodar correlação idade ~ expressão para cada gene
+results_age <- subset_genes %>%
+  group_by(genes) %>%
+  do(tidy(cor.test(.$expression, .$age, method = "spearman"))) %>%
+  ungroup()
+
+# Visualizar resultados
+results_age
+```
